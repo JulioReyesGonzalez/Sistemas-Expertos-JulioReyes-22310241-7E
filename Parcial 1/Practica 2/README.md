@@ -1,4 +1,4 @@
-# Registro_Adquirir_Conocimiento
+# 22310241_Adquirir_Conocimiento
 
 Chat sencillo con adquisición de conocimiento (incremental).
 
