@@ -1,0 +1,270 @@
+# -*- coding: utf-8 -*-
+"""
+===========================================================
+PRACTICA 1 — TERCER CÓDIGO: ÁRBOL DE DECISIÓN (ID3) 
+Caso de la vida diaria: recomendar medio de transporte
+(según distancia, lluvia y prisa) en {caminar, camion, uber}.
+
+Requisitos:
+    - Python 3.x (sin librerías externas)
+Ejecución:
+    python practica1_arbol_decision_id3.py
+Salida:
+    - Árbol aprendido impreso en texto
+    - Exactitud sobre un conjunto de prueba
+    - Predicciones de ejemplo
+===========================================================
+"""
+
+import math
+import random
+from collections import Counter, defaultdict
+random.seed(42)
+
+# -----------------------------------------------------------
+# 1) DATASET SINTÉTICO
+# -----------------------------------------------------------
+# Variables:
+# - distancia_km: float (0.1 a 10 km)
+# - lluvia: bool (True/False)
+# - prisa: bool (True/False)
+# Clase (label):
+# - transporte ∈ {caminar, camion, uber}
+#
+# Reglas intuitivas (para generar etiquetas):
+# - Si distancia <= 1.2 km y no llueve -> "caminar"
+# - Si distancia > 1.2 km y no prisa -> "camion"
+# - Si llueve mucho (lluvia=True) y distancia > 2 km -> "uber"
+# - Si prisa=True y distancia > 1 km -> "uber"
+# - Si llueve=True y distancia <= 1 km -> "camion" (para no mojarse caminando)
+# - En casos grises, desempate eligiendo clase más razonable por reglas.
+
+def generar_ejemplo():
+    d = round(random.uniform(0.2, 10.0), 2)
+    lluvia = random.random() < 0.35
+    prisa = random.random() < 0.4
+
+    # Generación de etiqueta basada en reglas "realistas"
+    if d <= 1.2 and not lluvia:
+        y = "caminar"
+    elif prisa and d > 1.0:
+        y = "uber"
+    elif lluvia and d > 2.0:
+        y = "uber"
+    elif lluvia and d <= 1.0:
+        y = "camion"
+    elif d > 1.2 and not prisa:
+        y = "camion"
+    else:
+        # fallback razonable
+        y = "camion" if d > 2.0 else "caminar"
+
+    return {"distancia_km": d, "lluvia": lluvia, "prisa": prisa, "transporte": y}
+
+def generar_dataset(n=120):
+    return [generar_ejemplo() for _ in range(n)]
+
+# -----------------------------------------------------------
+# 2) UTILIDADES: DISCRETIZACIÓN + MÉTRICAS (ENTROPÍA/GAIN)
+# -----------------------------------------------------------
+# ID3 clásico usa atributos categóricos. Para usar "distancia_km" (numérica),
+# la discretizamos en buckets (por ejemplo: "corta", "media", "larga").
+def bucket_distancia(d):
+    if d <= 1.0:
+        return "corta"
+    elif d <= 3.0:
+        return "media"
+    else:
+        return "larga"
+
+def preparar_registros(crudos):
+    """Convierte distancia a bucket y castea booleanos a 'si'/'no' para legibilidad."""
+    datos = []
+    for r in crudos:
+        datos.append({
+            "distancia": bucket_distancia(r["distancia_km"]),
+            "lluvia": "si" if r["lluvia"] else "no",
+            "prisa": "si" if r["prisa"] else "no",
+            "label": r["transporte"],
+        })
+    return datos
+
+def entropia(labels):
+    """Entropía de Shannon de una lista de clases."""
+    total = len(labels)
+    if total == 0:
+        return 0.0
+    cnt = Counter(labels)
+    H = 0.0
+    for c, k in cnt.items():
+        p = k / total
+        H -= p * math.log2(p)
+    return H
+
+def particionar(registros, atributo):
+    """
+    Particiona la lista de registros por valores del atributo dado.
+    Regresa dict valor -> lista_de_registros.
+    """
+    grupos = defaultdict(list)
+    for r in registros:
+        grupos[r[atributo]].append(r)
+    return grupos
+
+def information_gain(registros, atributo):
+    """
+    Ganancia de información para el atributo dado:
+    IG = H(parent) - sum( (|Sv|/|S|) * H(Sv) )
+    """
+    H_parent = entropia([r["label"] for r in registros])
+    grupos = particionar(registros, atributo)
+    total = len(registros)
+    ponderada = 0.0
+    for v, regs in grupos.items():
+        ponderada += (len(regs) / total) * entropia([r["label"] for r in regs])
+    return H_parent - ponderada
+
+# -----------------------------------------------------------
+# 3) ÁRBOL DE DECISIÓN (ID3)
+# -----------------------------------------------------------
+class Nodo:
+    def __init__(self, atributo=None, hijos=None, prediccion=None):
+        self.atributo = atributo   # atributo de decisión en este nodo (si no es hoja)
+        self.hijos = hijos or {}   # valor -> sub-nodo
+        self.prediccion = prediccion  # clase si hoja
+
+    def es_hoja(self):
+        return self.prediccion is not None
+
+def clase_mayoritaria(registros):
+    cnt = Counter([r["label"] for r in registros])
+    return cnt.most_common(1)[0][0] if cnt else None
+
+def id3(registros, atributos, profundidad=0, max_profundidad=None):
+    # Si todos los registros son de la misma clase -> hoja
+    labels = [r["label"] for r in registros]
+    if len(set(labels)) == 1:
+        return Nodo(prediccion=labels[0])
+
+    # Si no hay atributos o límite de profundidad -> hoja con clase mayoritaria
+    if not atributos or (max_profundidad is not None and profundidad >= max_profundidad):
+        return Nodo(prediccion=clase_mayoritaria(registros))
+
+    # Elegir el mejor atributo por IG
+    mejor_attr = max(atributos, key=lambda a: information_gain(registros, a))
+    grupos = particionar(registros, mejor_attr)
+
+    # Si el mejor atributo no divide (raro), hoja con clase mayoritaria
+    if len(grupos) <= 1:
+        return Nodo(prediccion=clase_mayoritaria(registros))
+
+    # Crear nodo y recursión
+    hijos = {}
+    nuevos_atributos = [a for a in atributos if a != mejor_attr]
+    for valor, regs in grupos.items():
+        if not regs:
+            hijos[valor] = Nodo(prediccion=clase_mayoritaria(registros))
+        else:
+            hijos[valor] = id3(regs, nuevos_atributos, profundidad+1, max_profundidad)
+
+    return Nodo(atributo=mejor_attr, hijos=hijos)
+
+def predecir_uno(nodo, registro):
+    """Recorre el árbol según valores del registro hasta llegar a una hoja."""
+    while not nodo.es_hoja():
+        attr = nodo.atributo
+        val = registro.get(attr, None)
+        if val in nodo.hijos:
+            nodo = nodo.hijos[val]
+        else:
+            # Valor no visto en entrenamiento: fallback a mayoría de los hijos
+            # (tomamos la predicción mayoritaria de subnodos hoja)
+            clases = []
+            for h in nodo.hijos.values():
+                if h.es_hoja():
+                    clases.append(h.prediccion)
+            return Counter(clases).most_common(1)[0][0] if clases else None
+    return nodo.prediccion
+
+def imprimir_arbol(nodo, prefijo=""):
+    """Imprime el árbol en estilo texto."""
+    if nodo.es_hoja():
+        print(prefijo + f"[HOJA] -> {nodo.prediccion}")
+        return
+    print(prefijo + f"[ATRIBUTO] {nodo.atributo}")
+    for val, hijo in nodo.hijos.items():
+        print(prefijo + f"  ├─ valor = {val}")
+        imprimir_arbol(hijo, prefijo + "  │   ")
+
+# -----------------------------------------------------------
+# 4) ENTRENAR, EVALUAR Y PROBAR
+# -----------------------------------------------------------
+def split_train_test(datos, test_ratio=0.25):
+    random.shuffle(datos)
+    n_test = int(len(datos) * test_ratio)
+    return datos[n_test:], datos[:n_test]
+
+def accuracy(y_true, y_pred):
+    ok = sum(1 for a, b in zip(y_true, y_pred) if a == b)
+    return ok / len(y_true) if y_true else 0.0
+
+def main():
+    # Generar y preparar datos
+    crudos = generar_dataset(n=160)
+    datos = preparar_registros(crudos)
+
+    # Partir entrenamiento / prueba
+    train, test = split_train_test(datos, test_ratio=0.3)
+
+    # Atributos disponibles (todos categóricos ya)
+    atributos = ["distancia", "lluvia", "prisa"]
+
+    # Entrenar árbol (puedes limitar profundidad si quieres)
+    arbol = id3(train, atributos, max_profundidad=None)
+
+    print("=== ÁRBOL DE DECISIÓN (ID3) ENTRENADO ===")
+    imprimir_arbol(arbol)
+
+    # Evaluar en test
+    y_true = [r["label"] for r in test]
+    y_pred = [predecir_uno(arbol, {k: r[k] for k in atributos}) for r in test]
+    acc = accuracy(y_true, y_pred)
+    print(f"\nExactitud en prueba: {acc:.3f}  (n={len(test)})")
+
+    # Predicciones de ejemplo
+    ejemplos = [
+        {"distancia": "corta", "lluvia": "no", "prisa": "no"},
+        {"distancia": "media", "lluvia": "si", "prisa": "no"},
+        {"distancia": "larga", "lluvia": "no", "prisa": "si"},
+        {"distancia": "corta", "lluvia": "si", "prisa": "no"},
+    ]
+    print("\nPredicciones de ejemplo:")
+    for e in ejemplos:
+        pred = predecir_uno(arbol, e)
+        print(f"  Entrada={e}  ->  Transporte recomendado: {pred}")
+
+if __name__ == "__main__":
+    main()
+
+# -----------------------------------------------------------
+# 5) GLOSARIO RÁPIDO
+# -----------------------------------------------------------
+"""
+ID3: Algoritmo para construir árboles de decisión usando Ganancia de Información.
+    Selecciona en cada nodo el atributo que más reduce la entropía (más "informativo").
+
+Entropía (de Shannon): Medida de impureza/aleatoriedad en las clases.
+    H = - sum(p_i * log2 p_i). Menor H = grupos más puros.
+
+Ganancia de Información (Information Gain):
+    IG = H(parent) - sum_{v} (|S_v|/|S|)*H(S_v).
+    Cuánto reduce la entropía al dividir por un atributo.
+
+Particionamiento: Separar los ejemplos por valores de un atributo
+    (p. ej., 'distancia' -> corta/media/larga).
+
+Hoja: Nodo terminal que tiene una predicción de clase.
+
+Discretización: Convertir variables numéricas (distancia_km) a categorías
+    (corta, media, larga) para usar ID3 clásico de forma directa.
+"""
