@@ -1,0 +1,297 @@
+# -*- coding: utf-8 -*-
+"""
+===========================================================
+PRACTICA 1.1
+===========================================================
+Este programa incluye DOS mini-proyectos de IA:
+
+1) A* (A-star) para PLANIFICACIÓN DE RUTA en una cuadrícula con
+   obstáculos. Devuelve la ruta más corta, su longitud y la
+   cuadrícula impresa con el camino.
+
+2) Naive Bayes (Multinomial) para CLASIFICAR PRIORIDAD DE TAREAS
+   en "prioritaria" o "puede_esperar" con un dataset pequeño.
+   Incluye entrenamiento, evaluación simple y predicciones de ejemplo.
+
+Ejecución:
+    python practica1_otro_codigo.py
+Requisitos:
+    - Python 3.x
+    - numpy (pip install numpy)
+"""
+
+import heapq
+import numpy as np
+from collections import defaultdict, Counter
+
+# ---------------------------------------------------------
+# 1) A* PATHFINDING (Planificación de Ruta)
+# ---------------------------------------------------------
+# Representamos un mapa en cuadrícula:
+# 0 = libre, 1 = obstáculo
+# S = inicio, G = meta (solo para visualizar)
+#
+# Caso de vida diaria: encontrar la ruta más corta evitando
+# "bloqueos" (calles cerradas/obras) entre dos puntos.
+
+def heuristica(a, b):
+    """
+    Heurística Manhattan: distancia en cuadras (|dx| + |dy|).
+    Es admisible para movimientos 4-direcciones.
+    """
+    (x1, y1), (x2, y2) = a, b
+    return abs(x1 - x2) + abs(y1 - y2)
+
+def vecinos(celda, grid):
+    """
+    Devuelve vecinos alcanzables (arriba/abajo/izquierda/derecha)
+    que estén dentro de la cuadrícula y no sean obstáculos.
+    """
+    x, y = celda
+    pasos = [(1,0), (-1,0), (0,1), (0,-1)]
+    res = []
+    n, m = grid.shape
+    for dx, dy in pasos:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < n and 0 <= ny < m and grid[nx, ny] == 0:
+            res.append((nx, ny))
+    return res
+
+def reconstruir_camino(came_from, start, goal):
+    """
+    Reconstruye la ruta desde la meta hacia el inicio usando el diccionario came_from.
+    """
+    actual = goal
+    ruta = [actual]
+    while actual != start:
+        actual = came_from[actual]
+        ruta.append(actual)
+    ruta.reverse()
+    return ruta
+
+def a_star(grid, start, goal):
+    """
+    A* clásico:
+    - g_score: coste acumulado desde start.
+    - f_score = g + heurística.
+    - open_set: cola de prioridad (min-heap) por f_score.
+    """
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+
+    g_score = defaultdict(lambda: float('inf'))
+    f_score = defaultdict(lambda: float('inf'))
+    g_score[start] = 0.0
+    f_score[start] = heuristica(start, goal)
+
+    en_cola = {start}
+
+    while open_set:
+        _, actual = heapq.heappop(open_set)
+        en_cola.discard(actual)
+
+        if actual == goal:
+            return reconstruir_camino(came_from, start, goal)
+
+        for nb in vecinos(actual, grid):
+            tentativo_g = g_score[actual] + 1  # coste 1 por paso
+            if tentativo_g < g_score[nb]:
+                came_from[nb] = actual
+                g_score[nb] = tentativo_g
+                f_score[nb] = tentativo_g + heuristica(nb, goal)
+                if nb not in en_cola:
+                    heapq.heappush(open_set, (f_score[nb], nb))
+                    en_cola.add(nb)
+
+    return []  # sin ruta
+
+def imprimir_mapa_con_ruta(grid, ruta, start, goal):
+    """
+    Imprime la cuadrícula con:
+    - 'S' inicio, 'G' meta
+    - '*' camino
+    - '#' obstáculo, '.' libre
+    """
+    n, m = grid.shape
+    chars = []
+    ruta_set = set(ruta)
+    for i in range(n):
+        fila = []
+        for j in range(m):
+            if (i, j) == start:
+                fila.append('S')
+            elif (i, j) == goal:
+                fila.append('G')
+            elif grid[i, j] == 1:
+                fila.append('#')
+            elif (i, j) in ruta_set:
+                fila.append('*')
+            else:
+                fila.append('.')
+        chars.append(' '.join(fila))
+    return '\n'.join(chars)
+
+def demo_a_star():
+    """
+    Demo: Mapa 10x15 con algunos obstáculos, ruta de S a G.
+    """
+    grid = np.zeros((10, 15), dtype=int)
+    # Obstáculos (simulando calles bloqueadas)
+    grid[2, 2:10] = 1
+    grid[3, 5:6] = 1
+    grid[4, 5:12] = 1
+    grid[6, 1:4] = 1
+    grid[7, 7:9] = 1
+    start = (0, 0)
+    goal  = (9, 14)
+
+    ruta = a_star(grid, start, goal)
+    print("=== A* PLANIFICACIÓN DE RUTA ===")
+    if ruta:
+        print(f"Longitud de ruta: {len(ruta)-1} pasos")
+        print(imprimir_mapa_con_ruta(grid, ruta, start, goal))
+    else:
+        print("No se encontró ruta")
+
+# ---------------------------------------------------------
+# 2) NAIVE BAYES (Multinomial) — Clasificar prioridad de tareas
+# ---------------------------------------------------------
+# Caso de vida diaria: dado el texto corto de una tarea/mensaje,
+# decidir si es "prioritaria" o "puede_esperar".
+#
+# Implementamos un NB Multinomial desde cero con suavizado de Laplace.
+
+def normalizar(texto):
+    """
+    Minúsculas + quitar signos simples.
+    (Sencillo para demo; se puede mejorar con regex).
+    """
+    t = texto.lower()
+    for ch in [',', '.', ';', ':', '!', '?', '(', ')', '"', "'"]:
+        t = t.replace(ch, ' ')
+    return ' '.join(t.split())
+
+def tokenizar(texto):
+    return normalizar(texto).split()
+
+class NaiveBayesMultinomial:
+    def __init__(self, alpha=1.0):
+        self.alpha = alpha
+        self.clases = []
+        self.vocab = set()
+        self.log_prior = {}
+        self.log_likelihood = {}  # dict[class][token] -> log P(token|class)
+
+    def fit(self, X_texts, y_labels):
+        """
+        Entrena contando frecuencias por clase y token.
+        Aplica suavizado de Laplace.
+        """
+        self.clases = sorted(set(y_labels))
+        # Contadores
+        counts_cls = Counter(y_labels)
+        token_counts = {c: Counter() for c in self.clases}
+        total_tokens_cls = {c: 0 for c in self.clases}
+
+        # Construir vocabulario y conteos
+        for texto, c in zip(X_texts, y_labels):
+            toks = tokenizar(texto)
+            for w in toks:
+                token_counts[c][w] += 1
+                total_tokens_cls[c] += 1
+                self.vocab.add(w)
+
+        V = len(self.vocab)
+        N = len(y_labels)
+
+        # Priors: log P(clase)
+        for c in self.clases:
+            self.log_prior[c] = np.log(counts_cls[c] / N)
+
+        # Likelihoods: log P(token|clase) con Laplace
+        self.log_likelihood = {c: {} for c in self.clases}
+        for c in self.clases:
+            denom = total_tokens_cls[c] + self.alpha * V
+            for w in self.vocab:
+                num = token_counts[c][w] + self.alpha
+                self.log_likelihood[c][w] = np.log(num / denom)
+
+    def predict_one(self, texto):
+        toks = tokenizar(texto)
+        # Sumar log-probabilidades: log P(c) + sum(log P(w|c))
+        scores = {}
+        for c in self.clases:
+            s = self.log_prior[c]
+            for w in toks:
+                if w in self.vocab:
+                    s += self.log_likelihood[c].get(w, 0.0)
+            scores[c] = s
+        # Devolver la clase con mayor score
+        return max(scores.items(), key=lambda kv: kv[1])[0], scores
+
+    def predict(self, X_texts):
+        return [self.predict_one(t)[0] for t in X_texts]
+
+def demo_naive_bayes():
+    """
+    Entrena y prueba un NB con dataset pequeño y realista.
+    Etiquetas: "prioritaria" / "puede_esperar".
+    """
+    X = [
+        "pagar luz hoy",
+        "entregar tarea robotica mañana",
+        "comprar pan",
+        "reunión con el profe 9am",
+        "revisar correo",
+        "cita en el dentista",
+        "renovar credencial antes del viernes",
+        "lavar auto",
+        "comprar regalo cumpleaños",
+        "imprimir reporte para hoy",
+        "ver series",
+        "pagar internet urgente",
+    ]
+    y = [
+        "prioritaria",        # pagar luz hoy
+        "prioritaria",        # entregar tarea robotica mañana
+        "puede_esperar",
+        "prioritaria",
+        "puede_esperar",
+        "prioritaria",
+        "prioritaria",
+        "puede_esperar",
+        "puede_esperar",
+        "prioritaria",
+        "puede_esperar",
+        "prioritaria",
+    ]
+
+    # Entrenar
+    nb = NaiveBayesMultinomial(alpha=1.0)
+    nb.fit(X, y)
+
+    # Evaluación simple: cuántos acierta sobre el mismo set (demo chico)
+    y_pred = nb.predict(X)
+    acc = np.mean([a == b for a, b in zip(y, y_pred)])
+
+    print("\n=== NAIVE BAYES — PRIORIDAD DE TAREAS ===")
+    print(f"Exactitud sobre dataset de ejemplo: {acc:.2f}")
+    print("Predicciones de ejemplo:")
+    ejemplos = [
+        "pagar agua hoy",
+        "comprar fruta",
+        "reunión de proyecto a las 8am",
+        "ver una película",
+        "imprimir practica para mañana",
+    ]
+    for e in ejemplos:
+        pred, scores = nb.predict_one(e)
+        print(f"  - '{e}'  ->  {pred}")
+
+# ---------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------
+if __name__ == "__main__":
+    demo_a_star()
+    demo_naive_bayes()
