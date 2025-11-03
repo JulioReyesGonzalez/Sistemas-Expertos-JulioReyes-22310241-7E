@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adivina Quién - Futbolistas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div id="game-ui">
+            <h2 id="question-text">Cargando...</h2>
+            <p id="message-text" class="hidden"></p>
+
+            <div class="controls" id="game-controls">
+                <button id="btn-yes">Sí</button>
+                <button id="btn-no">No</button>
+                <button id="btn-unknown">No sé</button>
+            </div>
+            
+            <div class="controls hidden" id="guess-controls">
+                <button id="btn-guess-yes">¡Sí, adivinaste!</button>
+                <button id="btn-guess-no">No, te equivocaste</button>
+            </div>
+
+            <div class="controls">
+                <button id="btn-restart">🔁 Nueva Partida</button>
+            </div>
+        </div>
+
+        <div id="learning-ui" class="hidden">
+            <h3 id="learning-title">¡No pude adivinar! Ayúdame a aprender.</h3>
+            
+            <div class="form-group">
+                <label for="new-player-name">¿En qué futbolista estabas pensando?</label>
+                <input type="text" id="new-player-name" placeholder="Ej: Lionel Messi">
+            </div>
+
+            <div class="form-group">
+                <label for="new-question-text">Escribe una pregunta que lo diferencie:</label>
+                <input type="text" id="new-question-text" placeholder="Ej: ¿Ganó el Balón de Oro?">
+            </div>
+
+            <div class="form-group">
+                <label>¿Cuál es la respuesta (SÍ/NO) para ese jugador?</label>
+                <div class="radio-group">
+                    <input type="radio" id="new-answer-yes" name="new-answer" value="si" checked>
+                    <label for="new-answer-yes">Sí</label>
+                    <input type="radio" id="new-answer-no" name="new-answer" value="no">
+                    <label for="new-answer-no">No</label>
+                </div>
+            </div>
+
+            <button id="btn-submit-new-player" class="btn-primary">Aprender y reiniciar</button>
+        </div>
+
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
