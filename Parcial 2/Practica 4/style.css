@@ -1,0 +1,329 @@
+/* ---- Variables Globales ---- */
+:root {
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --text-color: #f1f5f9;
+    --bg-panel: rgba(15, 23, 42, 0.75);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --disabled-color: #475569;
+}
+
+/* ---- Reseteo Básico y Fondo ---- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text-color);
+    line-height: 1.6;
+    overflow: hidden; /* Evita scroll por el modal */
+}
+
+body {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('fondo.jpg');
+    background-color: #0b111e;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+
+/* ---- Contenedor Principal ---- */
+.game-container {
+    width: 100%;
+    max-width: 650px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    text-align: center;
+    /* Añadimos un min-height para asegurar que siempre haya un tamaño base,
+       y overflow-y: auto para que el game-container pueda hacer scroll
+       si el contenido es demasiado alto, aunque intentaremos evitarlo. */
+    min-height: 80vh; /* Un tamaño mínimo para que no se vea vacío en pantallas grandes */
+    display: flex; /* Usamos flexbox para organizar el contenido */
+    flex-direction: column;
+    justify-content: space-between; /* Distribuye el espacio entre los elementos */
+}
+/* Aseguramos que el contenido dentro de cada pantalla se ajuste */
+.game-container > div {
+    flex-grow: 1; /* Permite que el contenido de las pantallas crezca */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Alinea el contenido de cada pantalla arriba */
+}
+#game-screen {
+    justify-content: space-between; /* Distribuye el espacio en game-screen específicamente */
+}
+
+
+h2 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+p {
+    margin-bottom: 1.5rem;
+}
+h3 {
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.8rem; /* Ligeramente reducido */
+    margin-top: 1rem;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---- Pantalla 1: Intro ---- */
+#intro-screen #intro-premise { 
+    margin-bottom: 1.25rem;
+}
+#intro-report {
+    font-style: italic;
+    font-weight: 600;
+    color: #f87171; 
+    background: rgba(0,0,0,0.2);
+    padding: 0.75rem 1rem; 
+    border-radius: 8px;
+    border: 1px solid #f87171;
+    margin-bottom: 0.75rem; 
+}
+#intro-clue {
+    font-style: italic;
+    font-weight: 600;
+    color: #60a5fa; 
+    background: rgba(0,0,0,0.2);
+    padding: 0.75rem 1rem; 
+    border-radius: 8px;
+    border: 1px solid #60a5fa;
+    margin-bottom: 1rem; /* Reducido un poco */
+}
+#intro-screen p:last-of-type { 
+    margin-bottom: 1rem; 
+}
+
+
+/* ---- Botones ---- */
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    width: 100%;
+    margin-top: 1rem; /* Mantener este margen para el botón de acusación */
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+.btn-primary:disabled {
+    background-color: var(--disabled-color);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---- Pantalla 2: Investigación ---- */
+#game-image-container { 
+    width: 100%;
+    margin-bottom: 1rem; /* Reducido el margen inferior */
+    border-radius: 8px;
+    overflow: hidden; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+#game-scenario-image { 
+    width: 100%;
+    height: 160px; /* Reducido de 180px a 160px */
+    object-fit: cover; 
+    display: block; 
+    border-radius: 8px; 
+}
+
+#clue-log-container {
+    text-align: left;
+    margin-bottom: 0.8rem; /* Reducido el margen inferior */
+}
+
+#clue-log {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.8rem; /* Reducido el padding */
+    min-height: 70px; /* Reducido min-height */
+    max-height: 110px; /* Reducido de 140px a 110px para la lista de pistas */
+    overflow-y: auto;
+}
+#clue-log p {
+    margin-bottom: 0.3rem; /* Reducido el margen entre pistas */
+    font-style: italic;
+    color: #cbd5e1;
+    font-size: 0.85rem; /* Fuente ligeramente más pequeña */
+}
+#clue-log p.placeholder {
+    font-style: normal;
+    color: #94a3b8;
+}
+
+#action-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px; /* Reducido de 8px a 7px el espacio entre botones */
+    text-align: left;
+    margin-bottom: 0.5rem; /* Ajustado el margen inferior de todo el control de acciones */
+}
+#action-controls h3 {
+    grid-column: 1 / -1; 
+    margin-top: 0.8rem; /* Ajustado el margen superior */
+    margin-bottom: 0.6rem; /* Ajustado el margen inferior */
+}
+
+#action-controls .btn-action {
+    background-color: #1e293b;
+    color: var(--text-color);
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.8rem; /* Reducido un poco más el padding de los botones de acción */
+    font-size: 0.8rem; /* Fuente un poco más pequeña */
+}
+#action-controls .btn-action:hover {
+    background-color: #334155;
+}
+#action-controls .btn-action:disabled {
+    background-color: var(--disabled-color);
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* Aseguramos que el botón de acusación esté siempre al final y tenga su margen */
+#btn-make-accusation {
+    margin-top: auto; /* Empuja el botón hacia abajo, si hay espacio */
+    margin-bottom: 0; /* Elimina cualquier margen inferior extra */
+}
+
+
+/* ---- Pantalla 3: Acusación ---- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    margin-bottom: 1rem;
+}
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 1rem;
+    width: 100%;
+}
+
+/* ---- Pantalla 4: Resultado ---- */
+#result-title {
+    margin-bottom: 1rem;
+}
+#result-story-text {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+    font-style: italic;
+    color: #cbd5e1;
+}
+
+/* ---- BOTÓN Y MODAL DE AYUDA ---- */
+#btn-help {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+#btn-help:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+#help-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+    text-align: left;
+}
+.modal-content h2 {
+    text-align: center;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    cursor: pointer;
+}
+.modal-close:hover {
+    color: #94a3b8;
+}
+
+#help-list {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem;
+}
+#help-list li {
+    margin-bottom: 0.75rem;
+}
+#help-list li strong {
+    color: var(--primary-color);
+}

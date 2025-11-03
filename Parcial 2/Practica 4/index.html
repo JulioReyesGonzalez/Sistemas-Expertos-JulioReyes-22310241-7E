@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clue F1 - El Sabotaje de Interlagos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <div id="intro-screen">
+            <h2 id="intro-title">El Sabotaje de Interlagos 2025</h2>
+            <p id="intro-premise">
+                ¡Desastre en el pit lane! La lucha por el título entre Norris, Piastri y Verstappen está al rojo vivo. Pero esta mañana, se descubrió un sabotaje crítico.
+            </p>
+            
+            <p id="intro-report">Cargando reporte de incidente...</p>
+            <p id="intro-clue">Cargando reporte de daños...</p>
+            
+            <p>Tienes 5 turnos para investigar. Reúne las pistas y descubre la verdad.</p>
+            <button id="btn-start" class="btn-primary">Empezar Investigación</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <h2 id="turn-counter">Turnos Restantes: 5</h2>
+            
+            <div id="game-image-container">
+                <img id="game-scenario-image" src="" alt="Escenario de investigación">
+            </div>
+
+            <div id="clue-log-container">
+                <h3>Pistas Recolectadas:</h3>
+                <div id="clue-log">
+                    <p class="placeholder">Aún no has encontrado pistas...</p>
+                </div>
+            </div>
+
+            <div id="action-controls">
+                <h3>Interrogar Sospechoso:</h3>
+                <button class="btn-action" data-type="interrogar" data-sujeto="Piastri">Oscar Piastri</button>
+                <button class="btn-action" data-type="interrogar" data-sujeto="Norris">Lando Norris</button>
+                <button class="btn-action" data-type="interrogar" data-sujeto="Verstappen">Max Verstappen</button>
+                <button class="btn-action" data-type="interrogar" data-sujeto="Wolff">Toto Wolff</button>
+                <button class="btn-action" data-type="interrogar" data-sujeto="Brown">Zak Brown</button>
+                
+                <h3>Investigar Locación:</h3>
+                <button class="btn-action" data-type="investigar" data-sujeto="GarajeMcLaren">Garaje de McLaren</button>
+                <button class="btn-action" data-type="investigar" data-sujeto="GarajeRedBull">Garaje de Red Bull</button>
+                <button class="btn-action" data-type="investigar" data-sujeto="ZonaPesaje">Zona de Pesaje FIA</button>
+                <button class="btn-action" data-type="investigar" data-sujeto="ParcFerme">Parc Fermé</button>
+                <button class="btn-action" data-type="investigar" data-sujeto="MotorhomeMcLaren">Motorhome McLaren</button>
+            </div>
+
+            <button id="btn-make-accusation" class="btn-primary" disabled>Hacer Acusación Final</button>
+        </div>
+
+        <div id="accusation-screen" class="hidden">
+            <h2>Acusación Final</h2>
+            <p>Es hora de resolver el caso. ¿Quién fue, dónde y con qué?</p>
+
+            <div class="form-group">
+                <label for="select-culpable">Culpable:</label>
+                <select id="select-culpable"></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="select-arma">Arma / Método:</label>
+                <select id="select-arma"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="select-locacion">Locación:</label>
+                <select id="select-locacion"></select>
+            </div>
+
+            <button id="btn-confirm-accusation" class="btn-primary">¡Confirmar Acusación!</button>
+        </div>
+
+        <div id="result-screen" class="hidden">
+            <h2 id="result-title">¡Caso Resuelto!</h2>
+            <p id="result-story-intro">Esta es la verdadera historia de lo que pasó:</p>
+            <p id="result-story-text"></p>
+            <button id="btn-restart" class="btn-primary">Jugar de Nuevo</button>
+        </div>
+
+    </div>
+    
+    <button id="btn-help">?</button>
+
+    <div id="help-modal" class="hidden">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Ayuda del Detective</h2>
+            <p>Cada locación es clave para un tipo de sabotaje. ¡Usa esto como guía!</p>
+            <ul id="help-list">
+                </ul>
+        </div>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
